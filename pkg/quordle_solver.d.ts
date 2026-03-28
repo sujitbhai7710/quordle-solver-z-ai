@@ -4,29 +4,10 @@
 export class QuordleSolver {
     free(): void;
     [Symbol.dispose](): void;
-    /**
-     * Compute the pattern between a guess and answer
-     * Returns array of 5 integers: 0=absent, 1=present, 2=correct
-     */
     computePattern(guess: string, answer: string): Uint8Array;
-    /**
-     * Filter a list of words by a pattern constraint
-     * pattern is array of 0/1/2 values
-     */
     filterByPattern(words: string[], guess: string, pattern: Uint8Array): string[];
-    /**
-     * Get the best guesses for the current game state
-     * Returns array of {word, entropy, score} objects
-     */
-    getBestGuesses(board_states: any, guesses_made: number, max_guesses: number, top_n: number): any;
-    /**
-     * Get the optimal first guess for a given mode
-     */
-    getFirstGuess(mode: string): string;
-    /**
-     * Get first N best guesses quickly (for initial display)
-     */
-    getQuickBestGuesses(board_possible_answers: any, guesses_made: number, top_n: number): any;
+    getFirstGuess(_mode: string): string;
+    getQuickBestGuesses(board_possibles: any, guesses_made: number, top_n: number): any;
     constructor(answer_list: string[], allowed_list: string[]);
 }
 
@@ -40,7 +21,6 @@ export interface InitOutput {
     readonly get_pattern_string: (a: number, b: number, c: number, d: number) => [number, number];
     readonly quordlesolver_computePattern: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly quordlesolver_filterByPattern: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
-    readonly quordlesolver_getBestGuesses: (a: number, b: any, c: number, d: number, e: number) => any;
     readonly quordlesolver_getFirstGuess: (a: number, b: number, c: number) => [number, number];
     readonly quordlesolver_getQuickBestGuesses: (a: number, b: any, c: number, d: number) => any;
     readonly quordlesolver_new: (a: number, b: number, c: number, d: number) => number;

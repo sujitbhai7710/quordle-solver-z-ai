@@ -12,8 +12,6 @@ export class QuordleSolver {
         wasm.__wbg_quordlesolver_free(ptr, 0);
     }
     /**
-     * Compute the pattern between a guess and answer
-     * Returns array of 5 integers: 0=absent, 1=present, 2=correct
      * @param {string} guess
      * @param {string} answer
      * @returns {Uint8Array}
@@ -29,8 +27,6 @@ export class QuordleSolver {
         return v3;
     }
     /**
-     * Filter a list of words by a pattern constraint
-     * pattern is array of 0/1/2 values
      * @param {string[]} words
      * @param {string} guess
      * @param {Uint8Array} pattern
@@ -49,28 +45,14 @@ export class QuordleSolver {
         return v4;
     }
     /**
-     * Get the best guesses for the current game state
-     * Returns array of {word, entropy, score} objects
-     * @param {any} board_states
-     * @param {number} guesses_made
-     * @param {number} max_guesses
-     * @param {number} top_n
-     * @returns {any}
-     */
-    getBestGuesses(board_states, guesses_made, max_guesses, top_n) {
-        const ret = wasm.quordlesolver_getBestGuesses(this.__wbg_ptr, board_states, guesses_made, max_guesses, top_n);
-        return ret;
-    }
-    /**
-     * Get the optimal first guess for a given mode
-     * @param {string} mode
+     * @param {string} _mode
      * @returns {string}
      */
-    getFirstGuess(mode) {
+    getFirstGuess(_mode) {
         let deferred2_0;
         let deferred2_1;
         try {
-            const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const ptr0 = passStringToWasm0(_mode, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             const ret = wasm.quordlesolver_getFirstGuess(this.__wbg_ptr, ptr0, len0);
             deferred2_0 = ret[0];
@@ -81,14 +63,13 @@ export class QuordleSolver {
         }
     }
     /**
-     * Get first N best guesses quickly (for initial display)
-     * @param {any} board_possible_answers
+     * @param {any} board_possibles
      * @param {number} guesses_made
      * @param {number} top_n
      * @returns {any}
      */
-    getQuickBestGuesses(board_possible_answers, guesses_made, top_n) {
-        const ret = wasm.quordlesolver_getQuickBestGuesses(this.__wbg_ptr, board_possible_answers, guesses_made, top_n);
+    getQuickBestGuesses(board_possibles, guesses_made, top_n) {
+        const ret = wasm.quordlesolver_getQuickBestGuesses(this.__wbg_ptr, board_possibles, guesses_made, top_n);
         return ret;
     }
     /**
