@@ -1,0 +1,11 @@
+node_modules/
+target/
+quordle-wasm/target/
+*.swp
+*.swo
+.DS_Store
+quordle-source/
+wordlebot-ref/
+crawl-quordle.mjs
+daily-puzzles.txt
+blacklist.txt

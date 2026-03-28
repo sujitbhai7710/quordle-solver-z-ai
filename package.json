@@ -1,0 +1,12 @@
+{
+  "name": "quordle-solver-z-ai",
+  "version": "1.0.0",
+  "description": "Entropy-based Quordle solver powered by Rust WASM",
+  "scripts": {
+    "dev": "npx http-server . -p 3000 -c-1",
+    "build": "cd quordle-wasm && wasm-pack build --target web --release && cp -r pkg ../",
+    "test": "cd quordle-wasm && cargo test"
+  },
+  "keywords": ["quordle", "solver", "wordle", "wasm", "entropy"],
+  "license": "MIT"
+}

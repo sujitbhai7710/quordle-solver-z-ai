@@ -1,0 +1,15 @@
+{
+  "name": "quordle-solver",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "quordle_solver_bg.wasm",
+    "quordle_solver.js",
+    "quordle_solver.d.ts"
+  ],
+  "main": "quordle_solver.js",
+  "types": "quordle_solver.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

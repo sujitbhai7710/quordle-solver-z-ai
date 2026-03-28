@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quordle Solver Z-AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>⚡ Quordle Solver Z-AI</h1>
+      <p class="subtitle">Entropy-powered solver for all Quordle modes</p>
+    </header>
+
+    <div class="mode-selector">
+      <label>Game Mode:</label>
+      <select id="mode-select">
+        <option value="daily">Daily (9 guesses)</option>
+        <option value="daily_chill">Daily Chill (12 guesses)</option>
+        <option value="daily_extreme">Daily Extreme (8 guesses)</option>
+        <option value="practice">Practice (9 guesses)</option>
+        <option value="sequence">Sequence (10 guesses)</option>
+        <option value="weekly">Weekly (9 guesses)</option>
+        <option value="rescue">Rescue (9 guesses)</option>
+      </select>
+    </div>
+
+    <div class="game-area">
+      <!-- 4 Board panels -->
+      <div class="boards-container" id="boards-container">
+        <div class="board" data-board="0">
+          <div class="board-header">
+            <span class="board-label">Board 1</span>
+            <span class="board-status" id="status-0">Active</span>
+          </div>
+          <div class="board-words" id="words-0"></div>
+        </div>
+        <div class="board" data-board="1">
+          <div class="board-header">
+            <span class="board-label">Board 2</span>
+            <span class="board-status" id="status-1">Active</span>
+          </div>
+          <div class="board-words" id="words-1"></div>
+        </div>
+        <div class="board" data-board="2">
+          <div class="board-header">
+            <span class="board-label">Board 3</span>
+            <span class="board-status" id="status-2">Active</span>
+          </div>
+          <div class="board-words" id="words-2"></div>
+        </div>
+        <div class="board" data-board="3">
+          <div class="board-header">
+            <span class="board-label">Board 4</span>
+            <span class="board-status" id="status-3">Active</span>
+          </div>
+          <div class="board-words" id="words-3"></div>
+        </div>
+      </div>
+
+      <!-- Guess input area -->
+      <div class="input-area">
+        <div class="guess-input-section">
+          <label>Enter your guess:</label>
+          <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word" autocomplete="off">
+          <button id="add-guess-btn" class="btn primary">Add Guess</button>
+          <button id="clear-btn" class="btn secondary">Reset</button>
+        </div>
+        
+        <div class="guesses-display" id="guesses-display">
+          <h3>Guesses Made: <span id="guess-count">0</span> / <span id="max-guesses">9</span></h3>
+          <div id="guesses-list"></div>
+        </div>
+      </div>
+
+      <!-- Solver results -->
+      <div class="solver-section">
+        <button id="solve-btn" class="btn solve">🧮 Find Best Guesses</button>
+        <div id="loading" class="loading hidden">Computing entropy...</div>
+        <div class="results" id="results">
+          <h3>Best Guesses</h3>
+          <div id="best-guesses-list" class="guess-results"></div>
+        </div>
+      </div>
+
+      <!-- Pattern input for each board -->
+      <div class="pattern-section" id="pattern-section">
+        <h3>Set Pattern for Last Guess</h3>
+        <p class="hint">Click tiles to cycle: ⬛ (absent) → 🟨 (present) → 🟩 (correct)</p>
+        <div id="pattern-inputs"></div>
+        <button id="apply-pattern-btn" class="btn primary">Apply Pattern & Find Next</button>
+      </div>
+    </div>
+
+    <footer>
+      <p>Built with Rust WASM • Entropy-based algorithm • <a href="https://github.com/ybenhayun/wordlebot" target="_blank">Inspired by wordlebot</a></p>
+    </footer>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
