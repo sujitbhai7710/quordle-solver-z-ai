@@ -5,8 +5,21 @@ export class QuordleSolver {
     free(): void;
     [Symbol.dispose](): void;
     computePattern(guess: string, answer: string): Uint8Array;
+    /**
+     * Filter words by pattern, with fallback from restricted to all words
+     */
     filterByPattern(words: string[], guess: string, pattern: Uint8Array): string[];
+    /**
+     * Filter with fallback: if restricted yields 0, try all words
+     */
+    filterWithFallback(restricted_words: string[], all_words: string[], guess: string, pattern: Uint8Array): string[];
+    getBestGuessesWithMode(board_possibles: any, guesses_made: number, top_n: number, word_bank_mode: string): any;
     getFirstGuess(_mode: string): string;
+    /**
+     * Get best guesses with word bank mode
+     * word_bank: "restricted" = only answer list, "complete" = all allowed words
+     * Falls back to complete if restricted yields nothing
+     */
     getQuickBestGuesses(board_possibles: any, guesses_made: number, top_n: number): any;
     constructor(answer_list: string[], allowed_list: string[]);
 }
@@ -21,6 +34,8 @@ export interface InitOutput {
     readonly get_pattern_string: (a: number, b: number, c: number, d: number) => [number, number];
     readonly quordlesolver_computePattern: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly quordlesolver_filterByPattern: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
+    readonly quordlesolver_filterWithFallback: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number];
+    readonly quordlesolver_getBestGuessesWithMode: (a: number, b: any, c: number, d: number, e: number, f: number) => any;
     readonly quordlesolver_getFirstGuess: (a: number, b: number, c: number) => [number, number];
     readonly quordlesolver_getQuickBestGuesses: (a: number, b: any, c: number, d: number) => any;
     readonly quordlesolver_new: (a: number, b: number, c: number, d: number) => number;

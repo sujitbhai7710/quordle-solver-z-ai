@@ -27,6 +27,7 @@ export class QuordleSolver {
         return v3;
     }
     /**
+     * Filter words by pattern, with fallback from restricted to all words
      * @param {string[]} words
      * @param {string} guess
      * @param {Uint8Array} pattern
@@ -43,6 +44,41 @@ export class QuordleSolver {
         var v4 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
         return v4;
+    }
+    /**
+     * Filter with fallback: if restricted yields 0, try all words
+     * @param {string[]} restricted_words
+     * @param {string[]} all_words
+     * @param {string} guess
+     * @param {Uint8Array} pattern
+     * @returns {string[]}
+     */
+    filterWithFallback(restricted_words, all_words, guess, pattern) {
+        const ptr0 = passArrayJsValueToWasm0(restricted_words, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArrayJsValueToWasm0(all_words, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(guess, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passArray8ToWasm0(pattern, wasm.__wbindgen_malloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.quordlesolver_filterWithFallback(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        var v5 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v5;
+    }
+    /**
+     * @param {any} board_possibles
+     * @param {number} guesses_made
+     * @param {number} top_n
+     * @param {string} word_bank_mode
+     * @returns {any}
+     */
+    getBestGuessesWithMode(board_possibles, guesses_made, top_n, word_bank_mode) {
+        const ptr0 = passStringToWasm0(word_bank_mode, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.quordlesolver_getBestGuessesWithMode(this.__wbg_ptr, board_possibles, guesses_made, top_n, ptr0, len0);
+        return ret;
     }
     /**
      * @param {string} _mode
@@ -63,6 +99,9 @@ export class QuordleSolver {
         }
     }
     /**
+     * Get best guesses with word bank mode
+     * word_bank: "restricted" = only answer list, "complete" = all allowed words
+     * Falls back to complete if restricted yields nothing
      * @param {any} board_possibles
      * @param {number} guesses_made
      * @param {number} top_n

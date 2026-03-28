@@ -14,16 +14,26 @@
     </header>
 
     <div class="mode-selector">
-      <label>Game Mode:</label>
-      <select id="mode-select">
-        <option value="daily">Daily (9 guesses)</option>
-        <option value="daily_chill">Daily Chill (12 guesses)</option>
-        <option value="daily_extreme">Daily Extreme (8 guesses)</option>
-        <option value="practice">Practice (9 guesses)</option>
-        <option value="sequence">Sequence (10 guesses)</option>
-        <option value="weekly">Weekly (9 guesses)</option>
-        <option value="rescue">Rescue (9 guesses)</option>
-      </select>
+      <div class="selector-group">
+        <label>Game Mode:</label>
+        <select id="mode-select">
+          <option value="daily">Daily (9 guesses)</option>
+          <option value="daily_chill">Daily Chill (12 guesses)</option>
+          <option value="daily_extreme">Daily Extreme (8 guesses)</option>
+          <option value="practice">Practice (9 guesses)</option>
+          <option value="sequence">Sequence (10 guesses)</option>
+          <option value="weekly">Weekly (9 guesses)</option>
+          <option value="rescue">Rescue (9 guesses)</option>
+        </select>
+      </div>
+      <div class="selector-group">
+        <label>Word Bank:</label>
+        <select id="wordbank-select">
+          <option value="restricted">Limited (Official Quordle ~2,350)</option>
+          <option value="complete">All Words (~10,650)</option>
+        </select>
+        <span class="wordbank-hint" id="wordbank-hint">Uses official Quordle answer list. Falls back to all words if needed.</span>
+      </div>
     </div>
 
     <div class="game-area">
