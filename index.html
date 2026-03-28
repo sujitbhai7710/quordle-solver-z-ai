@@ -2,109 +2,149 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Quordle Solver Z-AI</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <header>
-      <h1>⚡ Quordle Solver Z-AI</h1>
-      <p class="subtitle">Entropy-powered solver for all Quordle modes</p>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <h1>Quordle Solver <span class="accent">Z-AI</span></h1>
+        </div>
+        <p class="tagline">Entropy-powered • Rust WASM • Beats wordlebot</p>
+      </div>
     </header>
 
-    <div class="mode-selector">
-      <div class="selector-group">
-        <label>Game Mode:</label>
+    <!-- Settings Bar -->
+    <section class="settings-bar">
+      <div class="setting">
+        <label>Mode</label>
         <select id="mode-select">
-          <option value="daily">Daily (9 guesses)</option>
-          <option value="daily_chill">Daily Chill (12 guesses)</option>
-          <option value="daily_extreme">Daily Extreme (8 guesses)</option>
-          <option value="practice">Practice (9 guesses)</option>
-          <option value="sequence">Sequence (10 guesses)</option>
-          <option value="weekly">Weekly (9 guesses)</option>
-          <option value="rescue">Rescue (9 guesses)</option>
+          <option value="daily">Daily · 9</option>
+          <option value="daily_chill">Chill · 12</option>
+          <option value="daily_extreme">Extreme · 8</option>
+          <option value="practice">Practice · 9</option>
+          <option value="sequence">Sequence · 10</option>
+          <option value="weekly">Weekly · 9</option>
+          <option value="rescue">Rescue · 9</option>
         </select>
       </div>
-      <div class="selector-group">
-        <label>Word Bank:</label>
+      <div class="setting">
+        <label>Words</label>
         <select id="wordbank-select">
-          <option value="restricted">Limited (Official Quordle ~2,350)</option>
-          <option value="complete">All Words (~10,650)</option>
+          <option value="restricted">Limited · 2,350</option>
+          <option value="complete">All · 10,650</option>
         </select>
-        <span class="wordbank-hint" id="wordbank-hint">Uses official Quordle answer list. Falls back to all words if needed.</span>
       </div>
-    </div>
+      <div class="setting guess-counter">
+        <label>Guesses</label>
+        <div class="counter">
+          <span id="guess-count" class="count-num">0</span>
+          <span class="count-sep">/</span>
+          <span id="max-guesses" class="count-max">9</span>
+        </div>
+      </div>
+      <button id="clear-btn" class="btn-reset" title="Reset game">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Reset
+      </button>
+    </section>
 
-    <div class="game-area">
-      <!-- 4 Board panels -->
-      <div class="boards-container" id="boards-container">
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Boards Grid -->
+      <div class="boards-grid">
         <div class="board" data-board="0">
-          <div class="board-header">
-            <span class="board-label">Board 1</span>
-            <span class="board-status" id="status-0">Active</span>
+          <div class="board-head">
+            <span class="board-num">1</span>
+            <span class="board-status" id="status-0">—</span>
           </div>
-          <div class="board-words" id="words-0"></div>
+          <div class="board-body" id="words-0"></div>
         </div>
         <div class="board" data-board="1">
-          <div class="board-header">
-            <span class="board-label">Board 2</span>
-            <span class="board-status" id="status-1">Active</span>
+          <div class="board-head">
+            <span class="board-num">2</span>
+            <span class="board-status" id="status-1">—</span>
           </div>
-          <div class="board-words" id="words-1"></div>
+          <div class="board-body" id="words-1"></div>
         </div>
         <div class="board" data-board="2">
-          <div class="board-header">
-            <span class="board-label">Board 3</span>
-            <span class="board-status" id="status-2">Active</span>
+          <div class="board-head">
+            <span class="board-num">3</span>
+            <span class="board-status" id="status-2">—</span>
           </div>
-          <div class="board-words" id="words-2"></div>
+          <div class="board-body" id="words-2"></div>
         </div>
         <div class="board" data-board="3">
-          <div class="board-header">
-            <span class="board-label">Board 4</span>
-            <span class="board-status" id="status-3">Active</span>
+          <div class="board-head">
+            <span class="board-num">4</span>
+            <span class="board-status" id="status-3">—</span>
           </div>
-          <div class="board-words" id="words-3"></div>
+          <div class="board-body" id="words-3"></div>
         </div>
       </div>
 
-      <!-- Guess input area -->
-      <div class="input-area">
-        <div class="guess-input-section">
-          <label>Enter your guess:</label>
-          <input type="text" id="guess-input" maxlength="5" placeholder="Enter 5-letter word" autocomplete="off">
-          <button id="add-guess-btn" class="btn primary">Add Guess</button>
-          <button id="clear-btn" class="btn secondary">Reset</button>
+      <!-- Guess History -->
+      <section class="guesses-section">
+        <div class="section-header">
+          <h2>Guesses</h2>
+          <span class="badge" id="guess-badge">none yet</span>
         </div>
-        
-        <div class="guesses-display" id="guesses-display">
-          <h3>Guesses Made: <span id="guess-count">0</span> / <span id="max-guesses">9</span></h3>
-          <div id="guesses-list"></div>
+        <div id="guesses-list" class="guesses-list">
+          <div class="empty-state">Enter a guess below to start solving</div>
         </div>
-      </div>
+      </section>
 
-      <!-- Solver results -->
-      <div class="solver-section">
-        <button id="solve-btn" class="btn solve">🧮 Find Best Guesses</button>
-        <div id="loading" class="loading hidden">Computing entropy...</div>
-        <div class="results" id="results">
-          <h3>Best Guesses</h3>
-          <div id="best-guesses-list" class="guess-results"></div>
+      <!-- Input Section -->
+      <section class="input-section">
+        <div class="input-row">
+          <div class="input-wrapper">
+            <input type="text" id="guess-input" maxlength="5" placeholder="ABCDE" autocomplete="off" spellcheck="false">
+            <div class="input-border"></div>
+          </div>
+          <button id="add-guess-btn" class="btn-add">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Add
+          </button>
         </div>
-      </div>
+      </section>
 
-      <!-- Pattern input for each board -->
-      <div class="pattern-section" id="pattern-section">
-        <h3>Set Pattern for Last Guess</h3>
-        <p class="hint">Click tiles to cycle: ⬛ (absent) → 🟨 (present) → 🟩 (correct)</p>
-        <div id="pattern-inputs"></div>
-        <button id="apply-pattern-btn" class="btn primary">Apply Pattern & Find Next</button>
-      </div>
-    </div>
+      <!-- Pattern Section (shown after adding a guess) -->
+      <section class="pattern-section hidden" id="pattern-section">
+        <div class="section-header">
+          <h2>Set Colors</h2>
+          <span class="hint">Tap tiles: ⬛ → 🟨 → 🟩</span>
+        </div>
+        <div id="pattern-inputs" class="pattern-inputs"></div>
+        <button id="apply-pattern-btn" class="btn-solve">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Apply & Find Best Guess
+        </button>
+      </section>
 
-    <footer>
-      <p>Built with Rust WASM • Entropy-based algorithm • <a href="https://github.com/ybenhayun/wordlebot" target="_blank">Inspired by wordlebot</a></p>
+      <!-- Results Section -->
+      <section class="results-section" id="results-section">
+        <div class="section-header">
+          <h2>Best Guesses</h2>
+          <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            Computing...
+          </div>
+        </div>
+        <div id="best-guesses-list" class="results-grid"></div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Rust WASM • Entropy + Recursive Lookahead • <a href="https://github.com/sujitbhai7710/quordle-solver-z-ai" target="_blank">GitHub</a></p>
     </footer>
   </div>
 

@@ -1,345 +1,274 @@
 import init, { QuordleSolver, get_pattern_string } from './quordle-wasm/pkg/quordle_solver.js';
 
 let solver = null;
-let wordBankRestricted = []; // Official Quordle answers
-let wordBankAll = [];        // All valid 5-letter words
+let wordBankRestricted = [];
+let wordBankAll = [];
 let wordBankMode = 'restricted';
 let guesses = [];
 let gameMode = 'daily';
-let maxGuesses = {daily:9, daily_chill:12, daily_extreme:8, practice:9, sequence:10, weekly:9, rescue:9};
-let boardCount = 4;
+let maxGuesses = { daily: 9, daily_chill: 12, daily_extreme: 8, practice: 9, sequence: 10, weekly: 9, rescue: 9 };
+const boardCount = 4;
 let boardSolved = [false, false, false, false];
 let boardPossibleWords = [[], [], [], []];
 let selectedGuessIdx = -1;
 
-// Get the active answer list based on mode
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
 function getAnswerList() {
   return wordBankMode === 'complete' ? wordBankAll : wordBankRestricted;
 }
 
-// Get all possible words for filtering (includes both lists)
-function getAllWords() {
-  return wordBankAll;
-}
-
-// Get board words with fallback: if restricted gives 0, expand to all
-function getBoardWordsWithFallback(boardIdx) {
-  if (boardPossibleWords[boardIdx].length > 0) return boardPossibleWords[boardIdx];
-  // Fallback: if board has 0 words in restricted, try all words
-  if (wordBankMode === 'restricted') {
-    return [...wordBankAll];
-  }
+function getBoardWords(b) {
+  if (boardPossibleWords[b].length > 0) return boardPossibleWords[b];
+  if (wordBankMode === 'restricted') return [...wordBankAll];
   return [];
 }
 
 async function main() {
   await init();
-
-  const [answersResp, allowedResp] = await Promise.all([
-    fetch('./wordbank-answers.txt'),
-    fetch('./wordbank-allowed.txt')
-  ]);
-
-  const answersText = await answersResp.text();
-  const allowedText = await allowedResp.text();
-
-  wordBankRestricted = answersText.trim().split('\n').filter(w => w.length === 5);
-  wordBankAll = [...new Set([...wordBankRestricted, ...allowedText.trim().split('\n').filter(w => w.length === 5)])];
-
+  const [a, b] = await Promise.all([fetch('./wordbank-answers.txt'), fetch('./wordbank-allowed.txt')]);
+  wordBankRestricted = (await a.text()).trim().split('\n').filter(w => w.length === 5);
+  wordBankAll = [...new Set([...wordBankRestricted, ...(await b.text()).trim().split('\n').filter(w => w.length === 5)])];
   solver = new QuordleSolver(wordBankRestricted, wordBankAll);
-
   resetBoards();
-  setupUI();
-
-  console.log(`Loaded: ${wordBankRestricted.length} restricted, ${wordBankAll.length} total words`);
+  bindEvents();
 }
 
 function resetBoards() {
   boardSolved = [false, false, false, false];
   guesses = [];
   selectedGuessIdx = -1;
-  const answers = getAnswerList();
-  for (let i = 0; i < boardCount; i++) {
-    boardPossibleWords[i] = [...answers];
-  }
-  updateUI();
+  const list = getAnswerList();
+  for (let i = 0; i < boardCount; i++) boardPossibleWords[i] = [...list];
+  hidePattern();
+  render();
 }
 
-function setupUI() {
-  document.getElementById('mode-select').addEventListener('change', (e) => {
+function bindEvents() {
+  $('#mode-select').addEventListener('change', e => {
     gameMode = e.target.value;
-    document.getElementById('max-guesses').textContent = maxGuesses[gameMode];
     resetBoards();
   });
 
-  document.getElementById('wordbank-select').addEventListener('change', (e) => {
+  $('#wordbank-select').addEventListener('change', e => {
     wordBankMode = e.target.value;
-    const hint = document.getElementById('wordbank-hint');
-    hint.textContent = wordBankMode === 'restricted'
-      ? 'Uses official Quordle answer list. Falls back to all words if needed.'
-      : 'Uses all valid 5-letter words. Good for third-party Quordle sites.';
     resetBoards();
   });
 
-  document.getElementById('guess-input').addEventListener('input', (e) => {
+  $('#clear-btn').addEventListener('click', resetBoards);
+
+  const input = $('#guess-input');
+  input.addEventListener('input', e => {
     e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
   });
-
-  document.getElementById('guess-input').addEventListener('keydown', (e) => {
+  input.addEventListener('keydown', e => {
     if (e.key === 'Enter') addGuess();
   });
 
-  document.getElementById('add-guess-btn').addEventListener('click', addGuess);
-  document.getElementById('clear-btn').addEventListener('click', resetBoards);
-  document.getElementById('solve-btn').addEventListener('click', solve);
-  document.getElementById('apply-pattern-btn').addEventListener('click', applyPatternsAndSolve);
+  $('#add-guess-btn').addEventListener('click', addGuess);
+  $('#apply-pattern-btn').addEventListener('click', applyPatterns);
 }
 
 function addGuess() {
-  const input = document.getElementById('guess-input');
+  const input = $('#guess-input');
   const word = input.value.toUpperCase().trim();
-  if (word.length !== 5) { shakeElement(input); return; }
-
+  if (word.length !== 5) { input.classList.add('shake'); setTimeout(() => input.classList.remove('shake'), 400); return; }
   guesses.push({ word, patterns: null });
   input.value = '';
   selectedGuessIdx = guesses.length - 1;
-  updateUI();
-  showPatternInput();
+  render();
+  showPattern();
 }
 
 function removeGuess(idx) {
   guesses.splice(idx, 1);
-  recalculateBoardStates();
-  updateUI();
+  recalcBoards();
+  if (selectedGuessIdx >= guesses.length) selectedGuessIdx = guesses.length - 1;
+  if (guesses.length === 0) hidePattern();
+  render();
 }
 
-function recalculateBoardStates() {
+function recalcBoards() {
   boardSolved = [false, false, false, false];
-  const answers = getAnswerList();
-  for (let i = 0; i < boardCount; i++) {
-    boardPossibleWords[i] = [...answers];
-  }
-
-  for (const guess of guesses) {
-    if (guess.patterns) {
-      for (let b = 0; b < boardCount; b++) {
-        if (!boardSolved[b] && guess.patterns[b]) {
-          const patternStr = guess.patterns[b].join('');
-          const patternArr = guess.patterns[b];
-
-          // Try filtering with restricted first
-          let filtered = boardPossibleWords[b].filter(answer => {
-            const p = get_pattern_string(guess.word, answer);
-            return p === patternStr;
-          });
-
-          // If restricted gave 0 and we're in restricted mode, fall back to all words
-          if (filtered.length === 0 && wordBankMode === 'restricted') {
-            filtered = wordBankAll.filter(answer => {
-              const p = get_pattern_string(guess.word, answer);
-              return p === patternStr;
-            });
-          }
-
-          boardPossibleWords[b] = filtered;
-          if (boardPossibleWords[b].length <= 1) boardSolved[b] = true;
-        }
+  const list = getAnswerList();
+  for (let i = 0; i < boardCount; i++) boardPossibleWords[i] = [...list];
+  for (const g of guesses) {
+    if (!g.patterns) continue;
+    for (let b = 0; b < boardCount; b++) {
+      if (boardSolved[b] || !g.patterns[b]) continue;
+      const ps = g.patterns[b].join('');
+      let filtered = boardPossibleWords[b].filter(w => get_pattern_string(g.word, w) === ps);
+      if (filtered.length === 0 && wordBankMode === 'restricted') {
+        filtered = wordBankAll.filter(w => get_pattern_string(g.word, w) === ps);
       }
+      boardPossibleWords[b] = filtered;
+      if (boardPossibleWords[b].length <= 1) boardSolved[b] = true;
     }
   }
 }
 
 function solve() {
   if (!solver) return;
-  const loading = document.getElementById('loading');
+  const loading = $('#loading');
   loading.classList.remove('hidden');
 
   setTimeout(() => {
     try {
-      // Use the board words with fallback for each board
-      const boardArrays = [];
-      for (let b = 0; b < boardCount; b++) {
-        const words = getBoardWordsWithFallback(b);
-        boardArrays.push(words.slice(0, 5000));
-      }
-
-      const results = solver.getBestGuessesWithMode(
-        boardArrays,
-        guesses.length,
-        20,
-        wordBankMode
-      );
-
-      displayResults(results);
+      const boards = [];
+      for (let b = 0; b < boardCount; b++) boards.push(getBoardWords(b).slice(0, 5000));
+      const results = solver.getBestGuessesWithMode(boards, guesses.length, 20, wordBankMode);
+      renderResults(results);
     } catch (err) {
-      console.error('Solver error:', err);
-      document.getElementById('best-guesses-list').innerHTML =
-        `<p style="color: var(--accent)">Error: ${err.message}</p>`;
+      $('#best-guesses-list').innerHTML = `<p style="color:var(--red);padding:12px">Error: ${err.message}</p>`;
     }
     loading.classList.add('hidden');
-  }, 50);
+  }, 30);
 }
 
-function displayResults(results) {
-  const container = document.getElementById('best-guesses-list');
-  container.innerHTML = '';
-  if (!results || results.length === 0) {
-    container.innerHTML = '<p>No results found</p>';
-    return;
-  }
-  results.forEach((r, i) => {
-    const div = document.createElement('div');
-    div.className = 'guess-result';
-    const inRestricted = wordBankRestricted.includes(r.word);
-    const badge = !inRestricted && wordBankMode === 'restricted' ? ' <span class="badge">all</span>' : '';
-    div.innerHTML = `
-      <span class="rank">#${i + 1}</span>
-      <span class="word">${r.word}${badge}</span>
-      <span class="info">${r.score ? r.score.toFixed(2) : '—'}</span>
-    `;
-    div.addEventListener('click', () => {
-      document.getElementById('guess-input').value = r.word;
-    });
-    container.appendChild(div);
-  });
-}
-
-function showPatternInput() {
-  const section = document.getElementById('pattern-section');
+function showPattern() {
+  const section = $('#pattern-section');
   section.classList.remove('hidden');
-  const container = document.getElementById('pattern-inputs');
+  const container = $('#pattern-inputs');
   container.innerHTML = '';
-  if (selectedGuessIdx < 0 || !guesses[selectedGuessIdx]) return;
 
+  if (selectedGuessIdx < 0 || !guesses[selectedGuessIdx]) return;
   const guess = guesses[selectedGuessIdx];
+
   for (let b = 0; b < boardCount; b++) {
     if (boardSolved[b]) continue;
-    const div = document.createElement('div');
-    div.className = 'pattern-input';
+    const row = document.createElement('div');
+    row.className = 'pattern-row';
 
     const label = document.createElement('span');
-    label.className = 'board-label';
+    label.className = 'pattern-label';
     label.textContent = `Board ${b + 1}`;
-    div.appendChild(label);
+    row.appendChild(label);
 
-    const tilesDiv = document.createElement('div');
-    tilesDiv.className = 'pattern-tiles';
-    tilesDiv.dataset.board = b;
+    const tiles = document.createElement('div');
+    tiles.className = 'pattern-tiles';
+    tiles.dataset.board = b;
 
     for (let i = 0; i < 5; i++) {
       const tile = document.createElement('div');
       tile.className = 'pattern-tile';
       tile.dataset.state = guess.patterns?.[b]?.[i] ?? 0;
-      tile.dataset.pos = i;
       tile.textContent = guess.word[i];
-      updateTileVisual(tile);
+      styleTile(tile);
       tile.addEventListener('click', () => {
-        let state = parseInt(tile.dataset.state);
-        state = (state + 1) % 3;
-        tile.dataset.state = state;
-        updateTileVisual(tile);
+        tile.dataset.state = (parseInt(tile.dataset.state) + 1) % 3;
+        styleTile(tile);
       });
-      tilesDiv.appendChild(tile);
+      tiles.appendChild(tile);
     }
-    div.appendChild(tilesDiv);
-    container.appendChild(div);
+    row.appendChild(tiles);
+    container.appendChild(row);
   }
 }
 
-function updateTileVisual(tile) {
-  const state = tile.dataset.state;
-  tile.style.background = state === '2' ? 'var(--green)' : state === '1' ? 'var(--yellow)' : 'var(--gray)';
+function hidePattern() {
+  $('#pattern-section').classList.add('hidden');
 }
 
-function applyPatternsAndSolve() {
+function styleTile(tile) {
+  const s = tile.dataset.state;
+  tile.style.background = s === '2' ? 'var(--green)' : s === '1' ? 'var(--yellow)' : 'var(--gray)';
+  tile.style.borderColor = s === '2' ? '#16a34a' : s === '1' ? '#d4a008' : '#4a4a5c';
+  tile.style.color = s === '2' ? '#001a00' : s === '1' ? '#1a1a00' : 'rgba(255,255,255,0.7)';
+}
+
+function applyPatterns() {
   if (selectedGuessIdx < 0) return;
   const guess = guesses[selectedGuessIdx];
   guess.patterns = [];
 
   for (let b = 0; b < boardCount; b++) {
-    const tilesDiv = document.querySelector(`.pattern-tiles[data-board="${b}"]`);
+    const tilesDiv = $(`.pattern-tiles[data-board="${b}"]`);
     if (!tilesDiv) { guess.patterns.push(null); continue; }
-
-    const tiles = tilesDiv.querySelectorAll('.pattern-tile');
-    const pattern = Array.from(tiles).map(t => parseInt(t.dataset.state));
+    const pattern = Array.from(tilesDiv.querySelectorAll('.pattern-tile')).map(t => parseInt(t.dataset.state));
     guess.patterns.push(pattern);
 
     if (!boardSolved[b]) {
-      // Try filtering with restricted words first
       let filtered = solver.filterByPattern(boardPossibleWords[b], guess.word, pattern);
-
-      // If restricted gave 0 and we're in restricted mode, fall back to all words
       if (filtered.length === 0 && wordBankMode === 'restricted') {
         filtered = solver.filterByPattern(wordBankAll, guess.word, pattern);
       }
-
       boardPossibleWords[b] = filtered;
-
-      // Safety: ensure correct answer would be in the list
-      if (boardPossibleWords[b].length <= 1) {
-        boardSolved[b] = true;
-      }
+      if (boardPossibleWords[b].length <= 1) boardSolved[b] = true;
     }
   }
-
-  updateUI();
+  render();
   solve();
 }
 
-function updateUI() {
-  document.getElementById('guess-count').textContent = guesses.length;
-  document.getElementById('max-guesses').textContent = maxGuesses[gameMode];
+function render() {
+  // Counter
+  $('#guess-count').textContent = guesses.length;
+  $('#max-guesses').textContent = maxGuesses[gameMode];
 
-  const list = document.getElementById('guesses-list');
-  list.innerHTML = '';
-  guesses.forEach((g, i) => {
-    const chip = document.createElement('div');
-    chip.className = 'guess-chip';
-    if (i === selectedGuessIdx) chip.style.borderLeft = '3px solid var(--accent)';
-    chip.innerHTML = `<span>${g.word}</span><span class="remove" data-idx="${i}">&times;</span>`;
-    chip.querySelector('.remove').addEventListener('click', () => removeGuess(i));
-    chip.addEventListener('click', () => { selectedGuessIdx = i; showPatternInput(); updateUI(); });
-    list.appendChild(chip);
-  });
+  // Badge
+  const badge = $('#guess-badge');
+  badge.textContent = guesses.length === 0 ? 'none yet' : `${guesses.length} guess${guesses.length > 1 ? 'es' : ''}`;
 
+  // Guesses list
+  const list = $('#guesses-list');
+  if (guesses.length === 0) {
+    list.innerHTML = '<div class="empty-state">Enter a guess below to start solving</div>';
+  } else {
+    list.innerHTML = '';
+    guesses.forEach((g, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'guess-chip' + (i === selectedGuessIdx ? ' active' : '');
+      chip.innerHTML = `<span>${g.word}</span><span class="remove" title="Remove">&times;</span>`;
+      chip.querySelector('.remove').addEventListener('click', e => { e.stopPropagation(); removeGuess(i); });
+      chip.addEventListener('click', () => { selectedGuessIdx = i; showPattern(); render(); });
+      list.appendChild(chip);
+    });
+  }
+
+  // Boards
   for (let b = 0; b < boardCount; b++) {
-    const board = document.querySelector(`.board[data-board="${b}"]`);
-    const status = document.getElementById(`status-${b}`);
-    const wordsDiv = document.getElementById(`words-${b}`);
-    const words = getBoardWordsWithFallback(b);
+    const board = $(`.board[data-board="${b}"]`);
+    const status = $(`#status-${b}`);
+    const body = $(`#words-${b}`);
+    const words = getBoardWords(b);
 
     if (boardSolved[b]) {
       board.classList.add('solved');
-      status.textContent = boardPossibleWords[b][0] || 'Solved ✓';
-      status.classList.add('solved');
+      status.textContent = boardPossibleWords[b][0] || '✓ Solved';
+      status.classList.add('solved-status');
     } else {
       board.classList.remove('solved');
-      status.textContent = `${words.length} possible`;
-      status.classList.remove('solved');
+      status.textContent = `${words.length} left`;
+      status.classList.remove('solved-status');
     }
 
-    const preview = words.slice(0, 10).join(', ');
-    wordsDiv.textContent = preview + (words.length > 10 ? ` ... (+${words.length - 10} more)` : '');
-  }
-
-  const patternSection = document.getElementById('pattern-section');
-  if (guesses.length > 0 && !guesses.every(g => g.patterns)) {
-    patternSection.classList.remove('hidden');
-    if (selectedGuessIdx < 0) selectedGuessIdx = guesses.findIndex(g => !g.patterns);
-    showPatternInput();
-  } else if (guesses.length === 0) {
-    patternSection.classList.add('hidden');
+    const preview = words.slice(0, 15).join(', ');
+    body.textContent = preview || '—';
   }
 }
 
-function shakeElement(el) {
-  el.style.animation = 'none';
-  el.offsetHeight;
-  el.style.animation = 'shake 0.3s ease';
+function renderResults(results) {
+  const container = $('#best-guesses-list');
+  container.innerHTML = '';
+  if (!results || results.length === 0) {
+    container.innerHTML = '<div class="empty-state">No results</div>';
+    return;
+  }
+  results.forEach((r, i) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.style.animationDelay = `${i * 30}ms`;
+    const inRestricted = wordBankRestricted.includes(r.word);
+    const badge = !inRestricted && wordBankMode === 'restricted' ? '<span class="result-badge">all</span>' : '';
+    card.innerHTML = `
+      <span class="result-rank">#${i + 1}</span>
+      <span class="result-word">${r.word}${badge}</span>
+      <span class="result-score">${r.score ? r.score.toFixed(2) : '—'}</span>
+    `;
+    card.addEventListener('click', () => { $('#guess-input').value = r.word; });
+    container.appendChild(card);
+  });
 }
-
-const style = document.createElement('style');
-style.textContent = `@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }`;
-document.head.appendChild(style);
 
 main().catch(console.error);
